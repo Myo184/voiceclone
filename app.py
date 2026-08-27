@@ -1,4 +1,4 @@
-#@title 🎙️ Burmese Voice Studio VIP ကို စတင်အသုံးပြုရန် (Play နှိပ်ပါ) { display-mode: "form" }
+#@title ✨ YF TTS — Burmese AI Voice Studio ကို စတင်အသုံးပြုရန် (Play နှိပ်ပါ) { display-mode: "form" }
 #@markdown ဤနေရာတွင် Code များကို ကြည့်ရန်မလိုပါ။ **ဘယ်ဘက်ရှိ Play ခလုတ်ကို နှိပ်လိုက်ရုံဖြင့်** စတင်အသုံးပြုနိုင်ပါသည်။
 
 # ==========================================================
@@ -231,75 +231,98 @@ def generate_vip_long(vip_key, text, control_instruction, reference_audio, use_r
     return output_mp3_path, download_buttons_html, status_text
 
 # ==========================================================
-# 5. MODERN PREMIUM GRADIO UI & STYLING
+# 5. YF TTS · LUXURY BLACK & GOLD GRADIO UI
 # ==========================================================
 APP_CSS = """
 body {
     background:
-        radial-gradient(circle at 10% 0%, rgba(139, 92, 246, .18), transparent 32%),
-        radial-gradient(circle at 90% 12%, rgba(16, 185, 129, .12), transparent 30%),
-        #080b14;
+        radial-gradient(circle at 8% 3%, rgba(255, 198, 76, .15), transparent 31%),
+        radial-gradient(circle at 92% 10%, rgba(174, 125, 28, .14), transparent 28%),
+        linear-gradient(150deg, #070707, #11100c 55%, #090909);
+    color: #f8f3e7;
 }
 .gradio-container {
-    max-width: 1240px !important;
+    max-width: 1180px !important;
     margin: 0 auto !important;
-    padding: 24px 18px 42px !important;
+    padding: 28px 18px 44px !important;
 }
 .hero-card {
-    padding: 28px 30px;
-    border: 1px solid rgba(167, 139, 250, .25);
-    border-radius: 22px;
-    background: linear-gradient(135deg, rgba(76, 29, 149, .52), rgba(15, 23, 42, .88));
-    box-shadow: 0 20px 55px rgba(0, 0, 0, .28);
-    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+    padding: 34px 34px 30px;
+    border: 1px solid rgba(235, 190, 82, .37);
+    border-radius: 24px;
+    background: linear-gradient(118deg, rgba(36, 29, 12, .96), rgba(17, 16, 13, .96) 58%, rgba(57, 40, 11, .78));
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 230, 169, .10);
+    margin-bottom: 20px;
 }
-.hero-card h1 { margin: 0 0 8px; font-size: clamp(25px, 4vw, 40px); color: #ffffff !important; }
-.hero-card p { margin: 0; color: #cbd5e1; line-height: 1.75; }
-.feature-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 17px; }
+.hero-card::after {
+    content: "YF";
+    position: absolute;
+    right: 30px;
+    top: -44px;
+    color: rgba(255, 212, 118, .07);
+    font-size: 168px;
+    font-weight: 800;
+    letter-spacing: -16px;
+    pointer-events: none;
+}
+.brand-kicker { color: #e4b650; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+.hero-card h1 { position: relative; margin: 7px 0 9px; font-size: clamp(28px, 4vw, 43px); color: #fff9e9 !important; }
+.hero-card p { position: relative; max-width: 690px; margin: 0; color: #d5cdbc; line-height: 1.75; }
+.feature-row { position: relative; display: flex; flex-wrap: wrap; gap: 9px; margin-top: 19px; }
 .feature-pill {
     padding: 7px 12px;
-    border: 1px solid rgba(196, 181, 253, .22);
+    border: 1px solid rgba(238, 195, 90, .27);
     border-radius: 999px;
-    background: rgba(139, 92, 246, .12);
-    color: #ddd6fe;
+    background: rgba(242, 190, 66, .08);
+    color: #f4d890;
     font-size: 13px;
 }
 .panel {
-    border: 1px solid rgba(148, 163, 184, .16) !important;
-    border-radius: 18px !important;
-    padding: 18px !important;
-    background: rgba(15, 23, 42, .76) !important;
-    box-shadow: 0 14px 38px rgba(0, 0, 0, .18);
+    border: 1px solid rgba(231, 191, 97, .17) !important;
+    border-radius: 20px !important;
+    padding: 20px !important;
+    background: linear-gradient(145deg, rgba(30, 29, 25, .92), rgba(16, 16, 15, .94)) !important;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, .27);
 }
-.section-title h3 { margin: 0 0 2px; color: #ffffff !important; font-size: 18px; font-weight: 700; }
-.section-title p { margin: 0 0 12px; color: #94a3b8; font-size: 14px; }
-#generate-btn {
-    min-height: 52px;
-    border: 0 !important;
+.section-number { color: #e5b44c; font-size: 12px; font-weight: 800; letter-spacing: 1.4px; }
+.section-title h3 { margin: 3px 0 2px; color: #fff7e2 !important; font-size: 20px; font-weight: 700; }
+.section-title p { margin: 0 0 15px; color: #aaa18f; font-size: 14px; }
+#generate-btn, #generate-btn button {
+    min-height: 54px;
+    border: 1px solid rgba(255, 235, 182, .42) !important;
     border-radius: 13px !important;
-    background: linear-gradient(90deg, #7c3aed, #9333ea) !important;
-    box-shadow: 0 10px 26px rgba(124, 58, 237, .34);
-    font-weight: 700;
+    background: linear-gradient(105deg, #bb7b13, #f0c55d 52%, #bb7b13) !important;
+    color: #1b1203 !important;
+    box-shadow: 0 12px 28px rgba(193, 130, 16, .26);
+    font-size: 16px !important;
+    font-weight: 800 !important;
 }
-#generate-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
-.footer-note { text-align: center; color: #64748b; font-size: 12px; margin-top: 16px; }
+#generate-btn {
+    width: 100%;
+}
+#generate-btn:hover, #generate-btn button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.footer-note { text-align: center; color: #8f856f; font-size: 12px; margin-top: 18px; }
 @media (max-width: 700px) {
     .gradio-container { padding: 12px 10px 28px !important; }
-    .hero-card { padding: 21px 18px; border-radius: 17px; }
+    .hero-card { padding: 24px 19px; border-radius: 17px; }
     .panel { padding: 13px !important; border-radius: 15px !important; }
+    .hero-card::after { right: 15px; font-size: 114px; }
 }
 """
 
 APP_THEME = gr.themes.Soft(
-    primary_hue="violet",
-    secondary_hue="emerald",
-    neutral_hue="slate",
+    primary_hue="amber",
+    secondary_hue="yellow",
+    neutral_hue="stone",
 )
 
-with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
+with gr.Blocks(title="YF TTS · Burmese AI Voice Studio", theme=APP_THEME, css=APP_CSS) as demo:
     gr.HTML("""
     <section class="hero-card">
-        <h1>🎙️ Burmese Voice Studio <span style="color:#c4b5fd">VIP</span></h1>
+        <div class="brand-kicker">YF TTS · Burmese AI Voice Studio</div>
+        <h1>🎙️ သင့်အသံဖြင့် စာသားတိုင်းကို အသက်သွင်းပါ</h1>
         <p>စာမျက်နှာရှည် ဇာတ်ညွှန်းများနှင့် စာအုပ်များကို သင့်နမူနာအသံဖြင့်
         MP3 အသံဖိုင်နှင့် SRT စာတန်းထိုးအဖြစ် ထုတ်လုပ်ပါ။</p>
         <div class="feature-row">
@@ -307,7 +330,7 @@ with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
             <span class="feature-pill">🎧 Voice Cloning</span>
             <span class="feature-pill">📄 MP3 + SRT</span>
             <span class="feature-pill">⏱️ Long-form Ready</span>
-            <span class="feature-pill">🔒 Live Auth Verified</span>
+            <span class="feature-pill">👑 VIP Access</span>
         </div>
     </section>
     """)
@@ -316,7 +339,8 @@ with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
         with gr.Column(scale=6, elem_classes="panel"):
             gr.HTML("""
             <div class="section-title">
-                <h3>01 · အသံထုတ်လုပ်ရန်</h3>
+                <div class="section-number">STEP 01</div>
+                <h3>အသံထုတ်လုပ်ရန်</h3>
                 <p>VIP Key၊ ဖတ်စေလိုသောစာနှင့် နမူနာအသံကို ထည့်ပါ။</p>
             </div>
             """)
@@ -365,7 +389,8 @@ with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
         with gr.Column(scale=5, elem_classes="panel"):
             gr.HTML("""
             <div class="section-title">
-                <h3>02 · ရလဒ်</h3>
+                <div class="section-number">STEP 02</div>
+                <h3>ရလဒ်</h3>
                 <p>လုပ်ဆောင်မှုအခြေအနေနှင့် ထွက်ရှိလာသောအသံကို ဒီမှာကြည့်ပါ။</p>
             </div>
             """)
@@ -376,7 +401,7 @@ with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
             )
             direct_download_html = gr.HTML()
 
-    gr.HTML('<div class="footer-note">VoxCPM2 Burmese Voice Studio · VIP Access</div>')
+    gr.HTML('<div class="footer-note">YF TTS · Burmese AI Voice Studio · VIP Access</div>')
 
     gen_btn.click(
         fn=generate_vip_long,
@@ -387,6 +412,4 @@ with gr.Blocks(title="VoxCPM2 Burmese Voice Studio") as demo:
 demo.queue().launch(
     share=True,
     debug=True,
-    theme=APP_THEME,
-    css=APP_CSS,
 )
