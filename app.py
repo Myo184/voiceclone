@@ -598,15 +598,47 @@ def generate_vip_long(vip_key, device_fingerprint, text, control_instruction, re
         AudioSegment.from_wav(temp_wav_path).export(output_mp3_path, format="mp3", bitrate="192k")
         if os.path.exists(temp_wav_path): os.remove(temp_wav_path)
 
-        srt_content = ""
+        # ----------------------------------------------------------
+        # CapCut-compatible SRT
+        # ----------------------------------------------------------
+        # Use real CRLF line endings (not literal "\\n") and plain UTF-8.
+        srt_blocks = []
         for i, sub in enumerate(subtitles, 1):
-            srt_content += f"{i}\\n{format_srt_time(sub['start'])} --> {format_srt_time(sub['end'])}\\n{sub['text']}\\n\\n"
+            subtitle_text = str(sub["text"]).replace("\r\n", "\n").replace("\r", "\n").strip()
+            subtitle_text = "\n".join(
+                line.strip() for line in subtitle_text.split("\n") if line.strip()
+            )
+            if not subtitle_text:
+                continue
+
+            start_time = format_srt_time(max(0.0, float(sub["start"])))
+            end_time = format_srt_time(
+                max(float(sub["end"]), float(sub["start"]) + 0.001)
+            )
+
+            subtitle_text_crlf = subtitle_text.replace("\n", "\r\n")
+            srt_blocks.append(
+                f"{len(srt_blocks) + 1}\r\n"
+                f"{start_time} --> {end_time}\r\n"
+                f"{subtitle_text_crlf}"
+            )
+
+        srt_content = "\r\n\r\n".join(srt_blocks) + "\r\n"
+
+        # Save a real SRT file as UTF-8 without BOM.
+        output_srt_path = f"Long_Subtitle_{ts}.srt"
+        with open(output_srt_path, "w", encoding="utf-8", newline="") as srt_file:
+            srt_file.write(srt_content)
+
         with open(output_mp3_path, "rb") as f:
             mp3_b64 = base64.b64encode(f.read()).decode()
-        srt_b64 = base64.b64encode(srt_content.encode("utf-8-sig")).decode()
+
+        with open(output_srt_path, "rb") as f:
+            srt_b64 = base64.b64encode(f.read()).decode()
+
         download_buttons_html = f'''<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:15px;">
         <a href="data:audio/mp3;base64,{mp3_b64}" download="Long_Voice_{ts}.mp3" style="background:#8B5CF6;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">📥 MP3 Download</a>
-        <a href="data:text/plain;charset=utf-8;base64,{srt_b64}" download="Long_Subtitle_{ts}.srt" style="background:#10B981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">📄 SRT Download</a>
+        <a href="data:application/x-subrip;base64,{srt_b64}" download="Long_Subtitle_{ts}.srt" style="background:#10B981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">📄 SRT Download (CapCut)</a>
         </div>'''
 
         duration_sec = len(final_wav) / model.tts_model.sample_rate
