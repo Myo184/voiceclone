@@ -2,10 +2,66 @@
 #@markdown ဤနေရာတွင် Code များကို ကြည့်ရန်မလိုပါ။ **ဘယ်ဘက်ရှိ Play ခလုတ်ကို နှိပ်လိုက်ရုံဖြင့်** စတင်အသုံးပြုနိုင်ပါသည်။
 
 # ==========================================================
-# 1. INSTALL PACKAGES (AUTOMATIC DEPENDENCIES)
+# 1. INSTALL PACKAGES (VERSION-LOCKED / REPRODUCIBLE)
 # ==========================================================
-import subprocess, sys
-subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "voxcpm", "soundfile", "gradio", "torch", "numpy", "pydub", "pymongo", "dnspython", "cryptography"])
+import subprocess
+import sys
+import os
+from importlib.metadata import version as package_version, PackageNotFoundError
+
+# One-click Colab setup:
+# Do NOT reinstall Colab's preloaded NumPy/Torch/TorchAudio/SciPy/Numba stack.
+# Replacing those compiled packages inside a running kernel causes mixed binary
+# errors. Install only the app-level packages that this script needs directly.
+LOCKED_PACKAGES = [
+    "voxcpm==2.0.3",
+    "soundfile==0.14.0",
+    "gradio==6.26.0",
+    "pydub==0.25.1",
+    "pymongo==4.15.3",
+    "dnspython==2.8.0",
+]
+
+print("🔧 YF TTS packages များကို စစ်ဆေးတပ်ဆင်နေပါသည်...")
+
+# Freeze Colab's already-installed compiled stack before pip resolves VoxCPM's
+# dependencies. This prevents indirect NumPy/Torch upgrades inside the live
+# kernel while still allowing missing app packages to be installed.
+_COMPILED_STACK = [
+    "numpy",
+    "torch",
+    "torchaudio",
+    "torchvision",
+    "scipy",
+    "numba",
+    "pandas",
+    "scikit-learn",
+]
+_CONSTRAINTS_PATH = "/tmp/yf_tts_colab_constraints.txt"
+_constraints = []
+for _package in _COMPILED_STACK:
+    try:
+        _constraints.append(f"{_package}=={package_version(_package)}")
+    except PackageNotFoundError:
+        pass
+with open(_CONSTRAINTS_PATH, "w", encoding="utf-8") as _constraints_file:
+    _constraints_file.write("\n".join(_constraints) + "\n")
+
+print("🔒 Colab compiled stack locked:", ", ".join(_constraints))
+subprocess.check_call([
+    sys.executable,
+    "-m",
+    "pip",
+    "install",
+    "--quiet",
+    "--no-cache-dir",
+    "--upgrade-strategy",
+    "only-if-needed",
+    "--constraint",
+    _CONSTRAINTS_PATH,
+    *LOCKED_PACKAGES,
+])
+print("✅ Package setup ပြီးပါပြီ — app ကို ဆက်လက်စတင်နေပါသည်။")
 
 # ==========================================================
 # 2. SECURE LIVE LICENSE VERIFICATION ENGINE
@@ -18,6 +74,7 @@ import base64
 import json
 import datetime
 import hashlib
+import traceback
 import torch
 import numpy as np
 import soundfile as sf
@@ -475,7 +532,13 @@ def release_vip_quota(vip_key, request_chars):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"🚀 Running on Device: {device.upper()}")
 print("⏳ VoxCPM2 Model ကို GPU ပေါ်သို့ စတင်ဆွဲတင်နေပါသည်...")
-model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
+# Colab Tesla T4 cannot reliably run VoxCPM2's torch.compile warm-up
+# (bfloat16/Dynamo tracing). Eager mode is slower to start generating but stable.
+model = VoxCPM.from_pretrained(
+    "openbmb/VoxCPM2",
+    load_denoiser=False,
+    optimize=False,
+)
 print("✅ VoxCPM2 Model Loaded Successfully (Ready for 30+ Mins Audio)!")
 
 def format_srt_time(seconds):
@@ -535,6 +598,8 @@ def generate_vip_long(vip_key, device_fingerprint, text, control_instruction, re
 
     audio_segments = []
     subtitles = []
+    generation_errors = []
+    generation_traces = []
     current_time = 0.0
     silence_gap = 0.15
 
@@ -584,13 +649,27 @@ def generate_vip_long(vip_key, device_fingerprint, text, control_instruction, re
                     torch.cuda.empty_cache()
 
         except Exception as e:
-            print(f"Chunk #{idx+1} Error: {e}")
+            error_detail = f"Chunk #{idx+1}: {type(e).__name__}: {e}"
+            error_trace = traceback.format_exc()
+            generation_errors.append(error_detail)
+            generation_traces.append(error_trace)
+            print(f"[VOICE GENERATION ERROR] {error_detail}", flush=True)
+            print(error_trace, flush=True)
             continue
 
     if not audio_segments:
         release_vip_quota(vip_key.strip(), request_chars)
         _, _, total2, used2, remaining2 = verify_vip_license(vip_key, device_fingerprint)
-        return None, "", "❌ အသံထုတ်လုပ်ခြင်း မအောင်မြင်ပါ။ အသုံးပြုစာလုံး quota ကို ပြန်ဖြည့်ပေးထားပါသည်။", total2, remaining2, quota_counter_html(text, total2, remaining2)
+        first_error = generation_errors[0] if generation_errors else "Unknown generation error"
+        trace_lines = generation_traces[0].strip().splitlines()[-12:] if generation_traces else []
+        short_trace = "\n".join(trace_lines)
+        error_status = (
+            "❌ **အသံထုတ်လုပ်ခြင်း မအောင်မြင်ပါ။**\n\n"
+            "အသုံးပြုစာလုံး quota ကို ပြန်ဖြည့်ပေးထားပါသည်။\n\n"
+            f"**တကယ့် Error:** `{first_error}`\n\n"
+            f"**Traceback (နောက်ဆုံး 12 လိုင်း):**\n```text\n{short_trace}\n```"
+        )
+        return None, "", error_status, total2, remaining2, quota_counter_html(text, total2, remaining2)
 
     final_wav = np.concatenate(audio_segments)
     ts = int(time.time() * 1000)
